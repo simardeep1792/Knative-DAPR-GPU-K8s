@@ -1,5 +1,5 @@
 
-# Knative-DAPR-GPU-K8s
+![Area](https://github.com/user-attachments/assets/f071a78d-a6df-4c03-b73a-75bb065dfefa)
 
 ## Overview
 
