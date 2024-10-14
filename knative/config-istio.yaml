@@ -1,0 +1,14 @@
+# ConfigMap for Istio Gateway configuration used by Knative
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-istio              # Name of the ConfigMap, used for configuring Istio with Knative
+  namespace: knative-serving      # Namespace where Knative is deployed (typically "knative-serving")
+data:
+  # Definition of external gateways for Knative services
+  external-gateways: |
+    - name: mesh-gateway            # The name of the gateway (e.g., for mesh traffic routing)
+      namespace: istio-ingress       # The namespace where the Istio Ingress Gateway is running
+      service: istio-ingressgateway.istio-ingress.svc.cluster.local
+      # FQDN for the Istio Ingress Gateway service within the cluster.
+      # This allows the Knative services to send traffic through this gateway.

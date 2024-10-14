@@ -1,0 +1,28 @@
+# DAPR Component definition for Redis as a state store
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: redis-state             # Name of the DAPR state component
+  namespace: ollama             # Namespace for this component (ensure it matches the app's namespace)
+spec:
+  type: state.redis             # Type of the DAPR component (Redis state store)
+  version: v1                   # Version of the component
+  metadata:
+    - name: redisHost           # Redis host to connect to
+      value: "redis-service:6379" # Reference to the Redis service defined earlier, exposed on port 6379
+    - name: redisPassword       # Password for Redis (should use Kubernetes Secrets instead of hardcoding)
+      value: "***Sensitive***"  # **Sensitive**:
+    - name: actorStateStore     # Indicates if this store is used for DAPR actors (set to true for actor-based state management)
+      value: "true"
+
+# If Redis authentication is required, store the password in a Kubernetes Secret.
+#    Here's how you can reference the secret in this DAPR component:
+#
+#    - name: redisPassword
+#      valueFrom:
+#        secretKeyRef:
+#          name: redis-secret   # Name of the secret
+#          key: redis-password  # Key within the secret
+#
+#    You can create a secret using the following command:
+#    kubectl create secret generic redis-secret --from-literal=redis-password=<your-redis-password>

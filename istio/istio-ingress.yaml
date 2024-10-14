@@ -1,0 +1,97 @@
+# Namespace creation for Istio Ingress Gateway with managed Google Cloud Mesh
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-ingress              # Namespace for the Istio Ingress Gateway
+  annotations:
+    mesh.cloud.google.com/proxy: '{"managed": true}'  # Enables managed proxy for Google Cloud Mesh
+  labels:
+    name: istio-system             # Label to indicate it's part of the Istio system
+    istio.io/rev: asm-managed      # Istio's managed revision for Anthos Service Mesh
+spec: {}
+status: {}
+---
+# Service definition for the Istio Ingress Gateway to expose it as a LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-ingressgateway       # Name of the Ingress Gateway service
+  namespace: istio-ingress         # Namespace for the service
+spec:
+  type: LoadBalancer               # Expose the service through a cloud load balancer
+  loadBalancerIP: 34.23.174.110    # **Sensitive**: Consider removing this IP and allowing automatic assignment
+  selector:
+    istio: ingressgateway          # Selects the ingressgateway pods by label
+  ports:
+    - name: http
+      port: 80                     # HTTP traffic exposed on port 80
+      targetPort: 8080             # Maps to the internal container port
+    - name: https
+      port: 443                    # HTTPS traffic exposed on port 443
+      targetPort: 8443             # Maps to the internal container port
+---
+# Deployment definition for Istio Ingress Gateway with security configurations
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: istio-ingressgateway       # Name of the deployment
+  namespace: istio-ingress         # Namespace for the deployment
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway        # Ensures pods are matched based on this label
+  template:
+    metadata:
+      annotations:
+        inject.istio.io/templates: gateway   # Specifies that the gateway template should be used
+      labels:
+        istio: ingressgateway        # Label for selecting Istio Ingress Gateway
+        istio.io/rev: asm-managed    # Managed revision of Anthos Service Mesh
+    spec:
+      containers:
+        - name: istio-proxy          # Container running the Istio proxy
+          image: auto                # Image auto-updates to ensure the latest version
+          env:
+            - name: ISTIO_META_UNPRIVILEGED_POD
+              value: "true"          # Ensures the pod runs as an unprivileged pod
+          resources:
+            requests:
+              cpu: 100m              # CPU request for the pod
+              memory: 128Mi          # Memory request for the pod
+          securityContext:
+            allowPrivilegeEscalation: false  # Prevents privilege escalation
+            capabilities:
+              drop:
+                - all                # Drops all unnecessary capabilities for security
+            privileged: false         # Ensures the container does not run as privileged
+            readOnlyRootFilesystem: true  # Enforces a read-only root filesystem for security
+      securityContext:
+        fsGroup: 1337                # Group for running the container
+        runAsGroup: 1337             # Group for non-root user
+        runAsNonRoot: true           # Enforces non-root user for running the container
+        runAsUser: 1337              # Runs the container as non-root user 1337
+---
+# Role definition to allow reading credentials for TLS (e.g., certificates)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: istio-ingressgateway-sds    # Role for managing secret data access (SDS: Secret Discovery Service)
+  namespace: istio-ingress          # Namespace for the role
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]          # Grants access to Kubernetes secrets
+    verbs: ["get", "watch", "list"] # Permissions to get, watch, and list secrets
+---
+# RoleBinding to associate the Role with the default ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: istio-ingressgateway-sds    # Binds the Role to a ServiceAccount
+  namespace: istio-ingress          # Namespace for the role binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: istio-ingressgateway-sds    # Role being bound
+subjects:
+  - kind: ServiceAccount
+    name: default                   # Default ServiceAccount with access to secrets

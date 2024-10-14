@@ -1,0 +1,16 @@
+# DAPR Component definition for Kafka Pub/Sub integration
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub            # Name of the component, used in DAPR Pub/Sub invocations
+  namespace: ollama             # Namespace where this component will be deployed
+spec:
+  type: pubsub.kafka            # Type of DAPR component (Kafka Pub/Sub)
+  version: v1                   # Version of the component
+  metadata:
+    - name: brokers             # Kafka broker URL(s)
+      value: "kafka-broker:9092" # Broker address (replace with actual broker if external)
+    - name: consumerGroup        # Consumer group for Kafka consumers
+      value: "ollama-consumers"  # The name of the consumer group
+    - name: authRequired         # Indicates if authentication is required
+      value: "false"             # Set to true if broker requires authentication (recommend securing)

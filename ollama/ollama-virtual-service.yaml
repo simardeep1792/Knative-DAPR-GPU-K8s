@@ -1,0 +1,48 @@
+# Istio VirtualService for routing traffic to Knative services
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ollama                   # Name of the VirtualService
+  namespace: ollama               # Namespace where the VirtualService is deployed
+spec:
+  gateways:
+    - istio-ingress/mesh-gateway  # Reference to the previously defined Istio gateway (ensure this gateway is deployed)
+  hosts:
+    - "ollama.<your-ip>.nip.io"   # Replace <your-ip> with the actual IP or domain used by nip.io
+
+  http:
+    # Route for the preprocess-service
+    - match:
+        - uri:
+            prefix: "/preprocess" # Route requests with URI prefix /preprocess
+      rewrite:
+        uri: "/"                  # Rewrite the path if necessary (default to root /)
+      route:
+        - destination:
+            host: preprocess-service.ollama.svc.cluster.local  # FQDN for the preprocess service in the ollama namespace
+            port:
+              number: 80           # Default HTTP port for Knative services (mapped internally)
+
+    # Route for the postprocess-service
+    - match:
+        - uri:
+            prefix: "/postprocess" # Route requests with URI prefix /postprocess
+      rewrite:
+        uri: "/"                  # Rewrite the path if necessary (default to root /)
+      route:
+        - destination:
+            host: postprocess-service.ollama.svc.cluster.local  # FQDN for the postprocess service in the ollama namespace
+            port:
+              number: 80           # Default HTTP port for Knative services
+
+    # Route for the inference-service
+    - match:
+        - uri:
+            prefix: "/inference"   # Route requests with URI prefix /inference
+      rewrite:
+        uri: "/"                  # Rewrite the path if necessary (default to root /)
+      route:
+        - destination:
+            host: inference-service.ollama.svc.cluster.local   # FQDN for the inference service in the ollama namespace
+            port:
+              number: 80           # Default HTTP port for Knative services

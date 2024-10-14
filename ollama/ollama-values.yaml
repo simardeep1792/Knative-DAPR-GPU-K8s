@@ -1,0 +1,21 @@
+ollama:
+  gpu:
+    enabled: true              # Enable GPU integration
+    type: nvidia               # Use NVIDIA GPU
+    number: 1                  # Specify the number of GPUs
+    nvidiaResource: nvidia.com/gpu # Using the standard nvidia GPU resource
+  models:
+    - llama2                   # Specify the model to pull at startup
+ingress:
+  enabled: true                # Enable Ingress
+  className: istio             # Specify Istio as the ingress controller
+  hosts:
+    - host: ollama.<your-ip>.nip.io  # Hostname using nip.io with your reserved IP
+      paths:
+        - path: /
+          pathType: Prefix
+  gateway: istio-ingress/istio-ingressgateway  # Specify the Istio gateway
+  annotations:
+    kubernetes.io/ingress.class: "istio"
+labels:
+  istio.io/rev: asm-managed   # Ensure the Istio revision for ASM-managed is specified

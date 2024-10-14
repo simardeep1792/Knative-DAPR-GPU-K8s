@@ -1,0 +1,39 @@
+# Service definition for PostgreSQL to expose it internally within the Kubernetes cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-service      # Name of the service
+  namespace: ollama             # Namespace for this service (ensure the namespace exists)
+spec:
+  ports:
+    - port: 5432                # PostgreSQL's default port
+  selector:
+    app: postgresql             # Selector to target the 'postgresql' pods created by the deployment
+---
+# Deployment definition for PostgreSQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql-deployment   # Name of the deployment
+  namespace: ollama             # Namespace for the deployment
+spec:
+  selector:
+    matchLabels:
+      app: postgresql           # Ensures pods are matched based on this label
+  template:
+    metadata:
+      labels:
+        app: postgresql         # Label used for selecting and matching pods
+    spec:
+      containers:
+        - name: postgresql      # Container name (should be descriptive)
+          image: postgres:13    # PostgreSQL version 13 image from Docker Hub
+          env:
+            - name: POSTGRES_USER
+              value: "user"      # Replace with actual user or use Kubernetes Secrets
+            - name: POSTGRES_PASSWORD
+              value: "***Sensitive***"  # **Sensitive**: Replace with a reference to a Kubernetes Secret
+            - name: POSTGRES_DB
+              value: "ollama"    # The name of the database to create
+          ports:
+            - containerPort: 5432 # Expose PostgreSQL container port (ensure it aligns with the service)

@@ -1,0 +1,63 @@
+# Knative Service for Inference
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: inference-service      # Name of the service for inference
+  namespace: ollama            # Namespace where the service is deployed
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/target: "2"  # Target concurrency (2 requests per pod)
+        autoscaling.knative.dev/minScale: "1" # Minimum number of pods to maintain
+        autoscaling.knative.dev/maxScale: "5" # Maximum number of pods to scale to
+      labels:
+        sidecar.istio.io/inject: "false"     # Disable Istio sidecar injection (optional, depending on setup)
+    spec:
+      containers:
+        - image: artifact-registry/inference-service
+          imagePullPolicy: Always  # Always pull the latest image on container startup
+          
+          env:
+            - name: GPU_ENABLED      # Environment variable to toggle GPU usage
+              value: "true"
+            - name: OLLAMA_HOST      # Host address for the Ollama inference service
+              value: "http://ollama.<your-ip>.nip.io"  # Replace <your-ip> with the dynamic or reserved IP address
+
+          resources:
+            limits:
+              nvidia.com/gpu: "1"    # Request 1 GPU for the inference service
+              memory: "4Gi"          # Allocate 4Gi of memory for the container
+
+          ports:
+            - containerPort: 8080    # Expose the container on port 8080
+
+          # Readiness Probe: Ensures the service is ready to receive traffic
+          readinessProbe:
+            httpGet:
+              path: /                # Health check on root path
+              port: 8080
+            initialDelaySeconds: 5    # Wait 5 seconds before the first check
+            periodSeconds: 10         # Check every 10 seconds
+            failureThreshold: 3       # Mark the pod as unhealthy after 3 failed checks
+
+          # Liveness Probe: Ensures the container is still running and responsive
+          livenessProbe:
+            httpGet:
+              path: /                # Health check on root path
+              port: 8080
+            initialDelaySeconds: 10   # Wait 10 seconds before starting the checks
+            periodSeconds: 10         # Check every 10 seconds
+            failureThreshold: 3       # Restart the pod after 3 failed checks
+
+          # Security Context: Ensures the container runs securely without root privileges
+          securityContext:
+            allowPrivilegeEscalation: false  # Prevent privilege escalation
+            capabilities:
+              drop:
+                - ALL               # Drop all capabilities for better security
+            runAsUser: 1337          # Set the user ID (non-root)
+            runAsGroup: 1337         # Set the group ID
+            runAsNonRoot: true       # Ensure the container runs as a non-root user
+            seccompProfile:
+              type: RuntimeDefault   # Use the default seccomp profile for additional security

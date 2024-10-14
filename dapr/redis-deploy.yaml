@@ -1,0 +1,32 @@
+# Service definition for Redis to expose it internally within the Kubernetes cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service          # Name of the service to expose Redis
+  namespace: ollama            # Namespace for the Redis service
+spec:
+  ports:
+    - port: 6379               # Redis default port for communication
+  selector:
+    app: redis                 # Selector to target Redis pods (created by the deployment)
+---
+# Deployment definition for Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment       # Name of the Redis deployment
+  namespace: ollama            # Namespace for the deployment
+spec:
+  selector:
+    matchLabels:
+      app: redis               # Ensures pods are matched based on this label
+  template:
+    metadata:
+      labels:
+        app: redis             # Label used for selecting and matching Redis pods
+    spec:
+      containers:
+        - name: redis          # Container name (descriptive of the Redis service)
+          image: redis:6.0     # Redis image version 6.0 from Docker Hub
+          ports:
+            - containerPort: 6379 # Expose Redis container's port for communication
