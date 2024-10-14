@@ -46,7 +46,7 @@ To provision GPU resources, create a new node pool in your existing GKE cluster 
 
 ```bash
 gcloud container node-pools create knative-dapr-gpu-node \
-    --project phx-01had7ny8p --cluster=cluster-1 --zone us-east1-b \
+    --project $PROJECT_ID --cluster=cluster-1 --zone us-east1-b \
     --machine-type a2-highgpu-1g --num-nodes 1 \
     --accelerator type=nvidia-tesla-a100,count=1,gpu-driver-version=default,gpu-partition-size=1g.5gb \
     --enable-autoupgrade
